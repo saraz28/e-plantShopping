@@ -10,6 +10,7 @@ function ProductList() {
   const [showCart, setShowCart] = useState(false);
   const [showPlants, setShowPlants] = useState(false); // State to control the visibility of the About Us page
   const [addedToCart, setAddedToCart] = useState({});
+  const cart = useSelector((state) => state.cart.items);
 
   const plantsArray = [
     {
@@ -266,16 +267,19 @@ function ProductList() {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    width: "1100px",
+    width: "700px",
   };
   const styleA = {
     color: "white",
     fontSize: "30px",
     textDecoration: "none",
   };
+
   const handleCartClick = (e) => {
     e.preventDefault();
     setShowCart(true); // Set showCart to true when cart icon is clicked
+    console.log("click");
+    return cart.reduce((total, item) => total + item.quantity, 0);
   };
   const handlePlantsClick = (e) => {
     e.preventDefault();
@@ -290,10 +294,27 @@ function ProductList() {
 
   const handleAddToCart = (product) => {
     dispatch(addItem(product));
-    setAddedToCart((prevState) => ({
-      ...prevState,
-      [product.name]: true,
-    }));
+    // Directly update addedToCart based on the current cart state
+    const currentQuantity =
+      cart.find((item) => item.name === product.name)?.quantity || 0;
+    console.log("currentQuantity", currentQuantity);
+    if (currentQuantity >= 0) {
+      setAddedToCart((prevState) => ({
+        ...prevState,
+        [product.name]: true,
+      }));
+    } else {
+      console.log("currentQuantity", currentQuantity);
+      setAddedToCart((prevState) => ({
+        ...prevState,
+        [product.name]: false,
+      }));
+    }
+  };
+
+  // Calculate total quantity of items in the cart
+  const calculateTotalQuantity = () => {
+    return cart.reduce((total, item) => total + item.quantity, 0);
   };
 
   return (
@@ -323,6 +344,12 @@ function ProductList() {
           <div>
             {" "}
             <a href="#" onClick={(e) => handleCartClick(e)} style={styleA}>
+              {" "}
+              {(calculateTotalQuantity() > 0 && (
+                <span className="cart-quantity">
+                  {calculateTotalQuantity()}
+                </span>
+              )) || <span className="cart-quantity">0</span>}
               <h1 className="cart">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -354,7 +381,15 @@ function ProductList() {
           {plantsArray.map((category, index) => (
             <div key={index}>
               <h1>
-                <div>{category.category}</div>
+                <div
+                  style={{
+                    textDecoration: "underline overline",
+                    textAlign: "center",
+                    padding: "23px",
+                  }}
+                >
+                  {category.category}
+                </div>
               </h1>
               <div className="product-list">
                 {category.plants.map((plant, plantIndex) => (
@@ -366,14 +401,23 @@ function ProductList() {
                     />
                     <div className="product-title">{plant.name}</div>
                     <div className="product-title">{plant.description}</div>
-                    <div className="product-title">{plant.cost}</div>
+                    <div className="product-price">{plant.cost}</div>
 
-                    <button
-                      className="product-button"
-                      onClick={() => handleAddToCart(plant)}
-                    >
-                      Add to Cart
-                    </button>
+                    {!addedToCart[plant.name] ? (
+                      <button
+                        className="product-button"
+                        onClick={() => handleAddToCart(plant)}
+                      >
+                        Add to Cart
+                      </button>
+                    ) : (
+                      <button
+                        className="product-button added-to-cart "
+                        onClick={() => handleAddToCart(plant)}
+                      >
+                        Added to cart
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
